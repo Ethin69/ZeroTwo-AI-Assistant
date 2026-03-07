@@ -1,8 +1,13 @@
 import cohere
+import os
+from dotenv import load_dotenv
 
-API_KEY = "8k0iIyzBR8IgKQ83rmEgIwuiNHp3ESVjFpZrew4F"
+load_dotenv()
+
+API_KEY = os.getenv("COHERE_API_KEY")
 
 co = cohere.Client(API_KEY)
+
 chat_history = []
 
 name = input("What should ZeroTwo call you? ")
