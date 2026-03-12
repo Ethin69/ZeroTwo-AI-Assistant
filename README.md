@@ -14,7 +14,9 @@ Engine: Cohere API (LLM)
 Environment: Developed in VS Code; version controlled via Git.
 
 Live Interaction Example
+
 User: My exam is tomorrow.
+
 ZeroTwo: Focus on reviewing key concepts and practicing past papers. You've got this.
 
 Roadmap
