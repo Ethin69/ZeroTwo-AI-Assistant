@@ -1,6 +1,7 @@
 import cohere
 import os
 import json
+import pyttsx3
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,7 +25,23 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 
-def generate_response(user_input, name, mode):
+def speak(text):
+    engine = pyttsx3.init()
+    voices = engine.getProperty("voices")
+
+    # Try to use a female voice if available
+    if len(voices) > 1:
+        engine.setProperty("voice", voices[1].id)
+
+    engine.setProperty("rate", 170)
+    engine.setProperty("volume", 1.0)
+
+    engine.say(text)
+    engine.runAndWait()
+    engine.stop()
+
+
+def generate_response(user_input, name, mode, voice_mode):
 
     memory = load_memory()
 
@@ -70,6 +87,11 @@ User question:
 
     reply = response.text
 
+    # Speak only if voice mode is ON
+    if voice_mode:
+        speak(reply)
+
+    # Save memory
     memory["last_user_message"] = user_input
     save_memory(memory)
 

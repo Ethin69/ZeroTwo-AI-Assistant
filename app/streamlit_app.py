@@ -51,7 +51,7 @@ if user_input:
         st.write(user_input)
 
     # Call AI engine (now with mode)
-    reply = generate_response(user_input, name, mode)
+    reply = generate_response(user_input, name, mode, voice_mode)
 
     # Display assistant response
     with st.chat_message("assistant"):
