@@ -1,10 +1,11 @@
 import sys
 import os
+import threading
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
-from core.ai_engine import generate_response
+from core.ai_engine import generate_response, listen_microphone, stop_speaking, speak
 
 st.set_page_config(page_title="ZeroTwo AI", page_icon="❤️")
 
@@ -18,8 +19,41 @@ mode = st.sidebar.selectbox(
 
 voice_mode = st.sidebar.toggle("Voice Mode", False)
 
+voice_button = st.sidebar.button(
+    "🎤 Speak to ZeroTwo",
+    disabled=not voice_mode
+)
+
+# 🔇 Stop voice button
+stop_voice = st.sidebar.button("🔇 Stop Voice")
+
+if stop_voice:
+    stop_speaking()
+
 if st.sidebar.button("Reset Chat"):
     st.session_state.messages = []
+
+# ---------------- Mode Change Detection ----------------
+if "last_mode" not in st.session_state:
+    st.session_state.last_mode = mode
+
+mode_message = None
+
+if mode != st.session_state.last_mode:
+
+    if mode == "Study Planner":
+        mode_message = "📚 Darling, what subject should we conquer today?"
+
+    elif mode == "Concept Explainer":
+        mode_message = "🧠 Tell me a concept, Darling. I'll explain it clearly."
+
+    elif mode == "Coding Assistant":
+        mode_message = "💻 Ready to code, Darling? Show me the problem."
+
+    elif mode == "Chill Mode":
+        mode_message = "😌 Finally relaxing, Darling. What should we talk about?"
+
+    st.session_state.last_mode = mode
 
 # ---------------- Main UI ----------------
 st.title("❤️ ZeroTwo AI Study Assistant")
@@ -31,17 +65,36 @@ name = st.text_input("What should ZeroTwo call you?", "Darling")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Add mode message to chat
+if mode_message:
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": mode_message
+    })
+
 # Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# User input
+# Text input
 user_input = st.chat_input("Ask ZeroTwo something...")
 
+# 🎤 Voice input
+if voice_mode and voice_button:
+
+    with st.spinner("🎤 ZeroTwo is listening..."):
+        spoken_text = listen_microphone()
+
+    if spoken_text:
+        st.info(f"🎤 You said: {spoken_text}")
+        user_input = spoken_text
+    else:
+        st.warning("I couldn't hear you clearly, Darling. Try again.")
+
+# ---------------- Process message ----------------
 if user_input:
 
-    # Store user message
     st.session_state.messages.append({
         "role": "user",
         "content": user_input
@@ -50,14 +103,16 @@ if user_input:
     with st.chat_message("user"):
         st.write(user_input)
 
-    # Call AI engine (now with mode)
-    reply = generate_response(user_input, name, mode, voice_mode)
+    reply = generate_response(user_input, name, mode)
 
-    # Display assistant response
+    # Show text immediately
     with st.chat_message("assistant"):
         st.write(reply)
 
-    # Save response
+    # Speak in background thread
+    if voice_mode:
+        threading.Thread(target=speak, args=(reply,), daemon=True).start()
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": reply

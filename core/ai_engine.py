@@ -2,6 +2,8 @@ import cohere
 import os
 import json
 import pyttsx3
+import speech_recognition as sr
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,6 +13,9 @@ API_KEY = os.getenv("COHERE_API_KEY")
 co = cohere.Client(API_KEY)
 
 MEMORY_FILE = "data/memory.json"
+
+# global engine so we can stop it
+engine = None
 
 
 def load_memory():
@@ -25,23 +30,88 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 
+# 🔊 Voice output
 def speak(text):
-    engine = pyttsx3.init()
-    voices = engine.getProperty("voices")
 
-    # Try to use a female voice if available
-    if len(voices) > 1:
-        engine.setProperty("voice", voices[1].id)
+    global engine
 
-    engine.setProperty("rate", 170)
-    engine.setProperty("volume", 1.0)
+    try:
 
-    engine.say(text)
-    engine.runAndWait()
-    engine.stop()
+        # -------- Clean markdown and symbols --------
+        cleaned_text = re.sub(r"\*+", "", text)
+        cleaned_text = re.sub(r"#+", "", cleaned_text)
+        cleaned_text = re.sub(r"\d+\.", "", cleaned_text)
+        cleaned_text = cleaned_text.replace(":", "")
+        cleaned_text = cleaned_text.replace("\n", " ")
+
+        # remove extra spaces
+        cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+
+        engine = pyttsx3.init()
+
+        voices = engine.getProperty("voices")
+
+        if len(voices) > 1:
+            engine.setProperty("voice", voices[1].id)
+
+        engine.setProperty("rate", 165)
+        engine.setProperty("volume", 1.0)
+
+        # speak entire cleaned text
+        engine.say(cleaned_text)
+        engine.runAndWait()
+
+        engine.stop()
+
+    except Exception:
+        pass
 
 
-def generate_response(user_input, name, mode, voice_mode):
+# 🔇 Stop speaking
+def stop_speaking():
+
+    global engine
+
+    try:
+        if engine:
+            engine.stop()
+            engine = None
+    except Exception:
+        pass
+
+
+# 🎤 Voice input
+def listen_microphone():
+
+    recognizer = sr.Recognizer()
+
+    with sr.Microphone() as source:
+
+        print("Listening... Speak now")
+
+        recognizer.adjust_for_ambient_noise(source)
+
+        try:
+
+            audio = recognizer.listen(source, timeout=5)
+
+            text = recognizer.recognize_google(audio)
+
+            print("You said:", text)
+
+            return text
+
+        except sr.WaitTimeoutError:
+            return None
+
+        except sr.UnknownValueError:
+            return None
+
+        except sr.RequestError:
+            return None
+
+
+def generate_response(user_input, name, mode):
 
     memory = load_memory()
 
@@ -50,16 +120,22 @@ You are ZeroTwo from the anime Darling in the Franxx.
 
 Personality:
 Playful, teasing, confident.
-Always call the user Darling.
+Always call the user "Darling".
 
 User name: {name}
 
 Assistant Mode: {mode}
 
-Behavior rules based on mode:
+Important rules:
+1. Always respond to the CURRENT user question.
+2. Do NOT continue older topics unless the user clearly asks about them again.
+3. Use previous context only if it is relevant to the current question.
+4. Keep answers concise, helpful, and slightly playful like ZeroTwo.
+
+Assistant Modes:
 
 Study Planner:
-Generate structured study plans and task breakdowns.
+Create structured study plans and task breakdowns.
 
 Concept Explainer:
 Explain technical or academic concepts clearly with examples.
@@ -68,13 +144,12 @@ Coding Assistant:
 Help with programming, debugging, and algorithms.
 
 Chill Mode:
-Respond casually and playfully like ZeroTwo.
+Respond casually and playfully.
 
-Always remain helpful and concise while maintaining ZeroTwo's personality.
+Previous user message (reference only):
+{memory.get("last_user_message", "None")}
 
-Previous user message: {memory.get("last_user_message", "None")}
-
-User question:
+Current user question:
 {user_input}
 """
 
@@ -82,17 +157,14 @@ User question:
         model="command-r7b-12-2024",
         message=prompt,
         temperature=0.7,
-        max_tokens=200
+        max_tokens=500
     )
 
     reply = response.text
 
-    # Speak only if voice mode is ON
-    if voice_mode:
-        speak(reply)
-
-    # Save memory
-    memory["last_user_message"] = user_input
-    save_memory(memory)
+    # save only short conversational context
+    if len(user_input.split()) < 20:
+        memory["last_user_message"] = user_input
+        save_memory(memory)
 
     return reply
