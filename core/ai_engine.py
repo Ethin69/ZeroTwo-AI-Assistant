@@ -5,8 +5,8 @@ import speech_recognition as sr
 import re
 import asyncio
 import edge_tts
-import pygame
 from dotenv import load_dotenv
+from playsound import playsound
 
 load_dotenv()
 
@@ -15,9 +15,6 @@ API_KEY = os.getenv("COHERE_API_KEY")
 co = cohere.Client(API_KEY)
 
 MEMORY_FILE = "data/memory.json"
-
-# audio flag
-audio_playing = False
 
 
 def load_memory():
@@ -32,26 +29,25 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 
-# 🔊 Voice output (Neural voice)
+# 🔊 Voice generation
 async def edge_speak(text):
 
-    # -------- Clean markdown and symbols --------
+    # Clean markdown
     cleaned_text = re.sub(r"\*+", "", text)
     cleaned_text = re.sub(r"#+", "", cleaned_text)
     cleaned_text = re.sub(r"\d+\.", "", cleaned_text)
 
-    # remove punctuation that sounds awkward
+    # remove awkward punctuation
     cleaned_text = re.sub(r"[:;()\[\]{}]", "", cleaned_text)
 
-    # convert new lines to pauses
+    # convert line breaks to pauses
     cleaned_text = cleaned_text.replace("\n", ". ")
 
-    # remove extra spaces
     cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
 
     communicate = edge_tts.Communicate(
         text=cleaned_text,
-        voice="en-US-JennyNeural",   # smoother natural voice
+        voice="en-US-JennyNeural",
         rate="+6%",
         pitch="+1Hz"
     )
@@ -61,41 +57,22 @@ async def edge_speak(text):
 
 def speak(text):
 
-    global audio_playing
-
     try:
 
         asyncio.run(edge_speak(text))
 
-        pygame.mixer.init()
-        pygame.mixer.music.load("voice.mp3")
-        pygame.mixer.music.play()
+        playsound("voice.mp3")
 
-        audio_playing = True
-
-        while pygame.mixer.music.get_busy():
-            continue
-
-        pygame.mixer.music.stop()
-        audio_playing = False
-
-        os.remove("voice.mp3")
+        if os.path.exists("voice.mp3"):
+            os.remove("voice.mp3")
 
     except Exception:
         pass
 
 
-# 🔇 Stop speaking
+# 🔇 Stop speaking (not needed anymore but kept for compatibility)
 def stop_speaking():
-
-    global audio_playing
-
-    try:
-        if audio_playing:
-            pygame.mixer.music.stop()
-            audio_playing = False
-    except Exception:
-        pass
+    pass
 
 
 # 🎤 Voice input

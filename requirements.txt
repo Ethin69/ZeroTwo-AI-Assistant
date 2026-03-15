@@ -3,4 +3,4 @@ cohere
 python-dotenv
 SpeechRecognition
 edge-tts
-pygame
+playsound==1.2.2
