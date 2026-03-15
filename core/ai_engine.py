@@ -1,9 +1,11 @@
 import cohere
 import os
 import json
-import pyttsx3
 import speech_recognition as sr
 import re
+import asyncio
+import edge_tts
+import pygame
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,8 +16,8 @@ co = cohere.Client(API_KEY)
 
 MEMORY_FILE = "data/memory.json"
 
-# global engine so we can stop it
-engine = None
+# audio flag
+audio_playing = False
 
 
 def load_memory():
@@ -30,38 +32,54 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 
-# 🔊 Voice output
+# 🔊 Voice output (Neural voice)
+async def edge_speak(text):
+
+    # -------- Clean markdown and symbols --------
+    cleaned_text = re.sub(r"\*+", "", text)
+    cleaned_text = re.sub(r"#+", "", cleaned_text)
+    cleaned_text = re.sub(r"\d+\.", "", cleaned_text)
+
+    # remove punctuation that sounds awkward
+    cleaned_text = re.sub(r"[:;()\[\]{}]", "", cleaned_text)
+
+    # convert new lines to pauses
+    cleaned_text = cleaned_text.replace("\n", ". ")
+
+    # remove extra spaces
+    cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+
+    communicate = edge_tts.Communicate(
+        text=cleaned_text,
+        voice="en-US-JennyNeural",   # smoother natural voice
+        rate="+6%",
+        pitch="+1Hz"
+    )
+
+    await communicate.save("voice.mp3")
+
+
 def speak(text):
 
-    global engine
+    global audio_playing
 
     try:
 
-        # -------- Clean markdown and symbols --------
-        cleaned_text = re.sub(r"\*+", "", text)
-        cleaned_text = re.sub(r"#+", "", cleaned_text)
-        cleaned_text = re.sub(r"\d+\.", "", cleaned_text)
-        cleaned_text = cleaned_text.replace(":", "")
-        cleaned_text = cleaned_text.replace("\n", " ")
+        asyncio.run(edge_speak(text))
 
-        # remove extra spaces
-        cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+        pygame.mixer.init()
+        pygame.mixer.music.load("voice.mp3")
+        pygame.mixer.music.play()
 
-        engine = pyttsx3.init()
+        audio_playing = True
 
-        voices = engine.getProperty("voices")
+        while pygame.mixer.music.get_busy():
+            continue
 
-        if len(voices) > 1:
-            engine.setProperty("voice", voices[1].id)
+        pygame.mixer.music.stop()
+        audio_playing = False
 
-        engine.setProperty("rate", 165)
-        engine.setProperty("volume", 1.0)
-
-        # speak entire cleaned text
-        engine.say(cleaned_text)
-        engine.runAndWait()
-
-        engine.stop()
+        os.remove("voice.mp3")
 
     except Exception:
         pass
@@ -70,12 +88,12 @@ def speak(text):
 # 🔇 Stop speaking
 def stop_speaking():
 
-    global engine
+    global audio_playing
 
     try:
-        if engine:
-            engine.stop()
-            engine = None
+        if audio_playing:
+            pygame.mixer.music.stop()
+            audio_playing = False
     except Exception:
         pass
 
@@ -116,7 +134,8 @@ def generate_response(user_input, name, mode):
     memory = load_memory()
 
     prompt = f"""
-You are ZeroTwo from the anime Darling in the Franxx.
+You are ZeroTwo, an intelligent AI companion inspired by the anime Darling in the Franxx.
+You help with studying, coding, learning, and conversation.
 
 Personality:
 Playful, teasing, confident.
@@ -162,7 +181,6 @@ Current user question:
 
     reply = response.text
 
-    # save only short conversational context
     if len(user_input.split()) < 20:
         memory["last_user_message"] = user_input
         save_memory(memory)

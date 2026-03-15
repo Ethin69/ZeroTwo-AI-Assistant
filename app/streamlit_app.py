@@ -1,6 +1,8 @@
 import sys
 import os
 import threading
+import base64
+import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -8,6 +10,37 @@ import streamlit as st
 from core.ai_engine import generate_response, listen_microphone, stop_speaking, speak
 
 st.set_page_config(page_title="ZeroTwo AI", page_icon="❤️")
+
+# ---------------- Background Styling ----------------
+def set_background():
+
+    image_path = os.path.join(os.path.dirname(__file__), "..", "assets", "zerotwo_bg.png")
+
+    with open(image_path, "rb") as img:
+        encoded = base64.b64encode(img.read()).decode()
+
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }}
+
+        .block-container {{
+            background: rgba(255,255,255,0.98);
+            padding: 2rem;
+            border-radius: 18px;
+            margin-left: 420px;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+set_background()
 
 # ---------------- Sidebar ----------------
 st.sidebar.title("⚙ ZeroTwo Control Panel")
@@ -56,7 +89,7 @@ if mode != st.session_state.last_mode:
     st.session_state.last_mode = mode
 
 # ---------------- Main UI ----------------
-st.title("❤️ ZeroTwo AI Study Assistant")
+st.title("❤️ ZeroTwo AI Companion")
 st.write("Your playful study partner.")
 
 name = st.text_input("What should ZeroTwo call you?", "Darling")
@@ -105,11 +138,18 @@ if user_input:
 
     reply = generate_response(user_input, name, mode)
 
-    # Show text immediately
+    # ✨ Typing Animation
     with st.chat_message("assistant"):
-        st.write(reply)
 
-    # Speak in background thread
+        message_placeholder = st.empty()
+        full_text = ""
+
+        for char in reply:
+            full_text += char
+            message_placeholder.markdown(full_text)
+            time.sleep(0.01)
+
+    # Voice in background
     if voice_mode:
         threading.Thread(target=speak, args=(reply,), daemon=True).start()
 
