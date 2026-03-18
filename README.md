@@ -1,161 +1,131 @@
-# ❤️ ZeroTwo AI Companion
+❤️ ZeroTwo AI Companion
 
-ZeroTwo AI Companion is an AI-powered study assistant inspired by the character **ZeroTwo from *Darling in the Franxx***.
-It helps students with **studying, coding, explaining concepts, and productivity**, while maintaining a playful AI personality.
+An intelligent AI-powered companion designed for learning, coding, and productivity, inspired by Darling in the Franxx.
 
-The application is built using **Streamlit** and integrates an **LLM (Cohere)** to generate intelligent responses.
-
----
-
-## 🌐 Live Demo
-
-Try the deployed application:
-
-https://zerotwo-ai-companion.streamlit.app
+Built with a focus on personality, memory, and adaptive behavior, ZeroTwo is more than just a chatbot — it's an interactive AI assistant.
 
 ---
 
-## ✨ Features
+🚀 Features
 
-### 🤖 AI Assistant
+- 🧠 Smart Memory System
+  
+  - Remembers user name and recent topics
+  - Provides contextual responses
 
-* Intelligent responses powered by **Cohere LLM**
-* Friendly **ZeroTwo-inspired personality**
-* Calls the user **“Darling”** during conversations
+- 🎭 Multiple Assistant Modes
+  
+  - Study Planner 📚
+  - Concept Explainer 🧠
+  - Coding Assistant 💻
+  - Chill Mode 😌
 
-### 📚 Multiple Assistant Modes
+- 💬 Interactive Chat UI
+  
+  - Typing animation
+  - Avatar-based conversation
+  - Clean and modern interface
 
-Switch between different modes depending on your needs:
+- 🎨 Custom UI Design
+  
+  - Glassmorphism effect
+  - Anime-themed background
+  - Banner + avatar integration
 
-* **Study Planner** → Generates structured study plans
-* **Concept Explainer** → Explains technical topics clearly
-* **Coding Assistant** → Helps with programming and debugging
-* **Chill Mode** → Casual conversation mode
-
-### 🧠 Persistent Memory
-
-The assistant remembers previous user interactions using a **JSON memory system**, allowing more contextual responses.
-
-### 🎤 Voice Interaction
-
-* Voice input using **Speech Recognition**
-* AI responses can be spoken using **Neural Text-to-Speech**
-
-### 🎨 Modern UI
-
-* Custom **anime-themed interface**
-* **ZeroTwo background**
-* Clean **chat interface**
-* Typing-style response animation
-
-### ☁️ Cloud Deployment
-
-The app is deployed on **Streamlit Cloud** so it can be accessed from anywhere.
+- 🧍 Personalized Identity
+  
+  - AI identifies creator (Saiyan)
+  - Maintains consistent personality
 
 ---
 
-## 🏗️ Project Architecture
+🛠 Tech Stack
 
-```
+- Python 🐍
+- Streamlit 🌐
+- Cohere API 🤖
+- HTML/CSS 🎨
+- JSON (Memory System)
+
+---
+
+📂 Project Structure
+
 ZeroTwo-AI/
 │
 ├── app/
-│   └── streamlit_app.py        # Streamlit UI
+│   └── streamlit_app.py
 │
 ├── core/
-│   └── ai_engine.py            # AI logic and LLM integration
+│   └── ai_engine.py
 │
 ├── assets/
-│   └── zerotwo_bg.png          # UI background image
+│   ├── zerotwo_bg.png
+│   ├── zerotwo_banner.png
+│   └── zerotwo_avatar.png
 │
 ├── data/
-│   └── memory.json             # Persistent memory storage
+│   └── memory.json
 │
-├── requirements.txt            # Project dependencies
-├── .gitignore
+├── requirements.txt
 └── README.md
-```
 
 ---
 
-## ⚙️ Tech Stack
+⚙️ Setup Instructions
 
-* **Python**
-* **Streamlit**
-* **Cohere LLM API**
-* **SpeechRecognition**
-* **Edge-TTS**
-* **JSON memory system**
+1. Clone the repository
 
----
+git clone https://github.com/your-username/zerotwo-ai.git
+cd zerotwo-ai
 
-## 🚀 Installation (Local Setup)
+2. Install dependencies
 
-Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/zerotwo-ai-companion.git
-cd zerotwo-ai-companion
-```
-
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
-```
 
-Create a `.env` file:
+3. Add your API key
+   Create a ".env" file:
 
-```
 COHERE_API_KEY=your_api_key_here
-```
 
-Run the application:
+4. Run the app
 
-```bash
 streamlit run app/streamlit_app.py
-```
 
 ---
 
-## 🔐 Environment Variables
+🌐 Deployment
 
-The application requires a **Cohere API key**.
-
-```
-COHERE_API_KEY=your_api_key_here
-```
-
-For deployment on Streamlit Cloud, add this key under **App Secrets**.
+Deployed using Streamlit Cloud
 
 ---
 
-## 🎯 Future Improvements
+👨‍💻 Creator
 
-Planned upgrades include:
-
-* Long-term vector memory
-* Better conversational context
-* Advanced voice system
-* AI tool integrations
-* Local LLM support
+Saiyan
+AI Engineering Student
+Building intelligent AI systems 🚀
 
 ---
 
-## 👨‍💻 Author
+💡 Future Improvements
 
-**Ethin**
-
-AI Engineering Student interested in building intelligent systems, AI companions, and creative AI products.
-
----
-
-## ⭐ Inspiration
-
-Inspired by the character **ZeroTwo** from *Darling in the Franxx* and the idea of creating an AI companion that helps with learning and productivity.
+- Voice interaction (TTS + STT optimization)
+- Image-based responses
+- Multi-user memory system
+- Mobile responsive UI
 
 ---
 
-## 📜 License
+⭐ Final Note
 
-This project is for educational and portfolio purposes.
+This project demonstrates:
+
+- AI integration
+- System design
+- UI/UX thinking
+- Product-level development
+
+---
+
+💖 Darling, let’s build the future together.
