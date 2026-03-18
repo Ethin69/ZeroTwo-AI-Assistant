@@ -1,13 +1,12 @@
 import sys
 import os
-import threading
 import base64
 import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
-from core.ai_engine import generate_response, listen_microphone, stop_speaking, speak
+from core.ai_engine import generate_response
 
 st.set_page_config(page_title="ZeroTwo AI", page_icon="❤️")
 
@@ -30,10 +29,20 @@ def set_background():
         }}
 
         .block-container {{
-            background: rgba(255,255,255,0.98);
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px);
             padding: 2rem;
-            border-radius: 18px;
-            margin-left: 420px;
+            border-radius: 20px;
+            margin-left: 300px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }}
+
+        h1, h2, h3 {{
+            font-weight: 600;
+        }}
+
+        p {{
+            font-size: 15px;
         }}
         </style>
         """,
@@ -41,6 +50,9 @@ def set_background():
     )
 
 set_background()
+
+# ---------------- Header Banner ----------------
+st.image("assets/zerotwo_banner.png", use_container_width=True)
 
 # ---------------- Sidebar ----------------
 st.sidebar.title("⚙ ZeroTwo Control Panel")
@@ -50,21 +62,15 @@ mode = st.sidebar.selectbox(
     ["Study Planner", "Concept Explainer", "Coding Assistant", "Chill Mode"]
 )
 
-voice_mode = st.sidebar.toggle("Voice Mode", False)
-
-voice_button = st.sidebar.button(
-    "🎤 Speak to ZeroTwo",
-    disabled=not voice_mode
-)
-
-# 🔇 Stop voice button
-stop_voice = st.sidebar.button("🔇 Stop Voice")
-
-if stop_voice:
-    stop_speaking()
-
 if st.sidebar.button("Reset Chat"):
     st.session_state.messages = []
+
+# Creator Section
+st.sidebar.markdown("---")
+st.sidebar.subheader("👨‍💻 Creator")
+st.sidebar.write("Saiyan")
+st.sidebar.caption("AI Engineering Student")
+st.sidebar.caption("Building AI companions 🚀")
 
 # ---------------- Mode Change Detection ----------------
 if "last_mode" not in st.session_state:
@@ -90,40 +96,38 @@ if mode != st.session_state.last_mode:
 
 # ---------------- Main UI ----------------
 st.title("❤️ ZeroTwo AI Companion")
-st.write("Your playful study partner.")
+st.write("Your intelligent AI companion for learning, coding, and productivity.")
 
 name = st.text_input("What should ZeroTwo call you?", "Darling")
 
 # Chat memory
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": "Darling 💖 I'm ZeroTwo, your AI companion created by Saiyan. What shall we explore today?"
+        }
+    ]
 
-# Add mode message to chat
+# Add mode message
 if mode_message:
     st.session_state.messages.append({
         "role": "assistant",
         "content": mode_message
     })
 
-# Display chat history
+# ---------------- Display chat with avatars ----------------
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
 
-# Text input
-user_input = st.chat_input("Ask ZeroTwo something...")
-
-# 🎤 Voice input
-if voice_mode and voice_button:
-
-    with st.spinner("🎤 ZeroTwo is listening..."):
-        spoken_text = listen_microphone()
-
-    if spoken_text:
-        st.info(f"🎤 You said: {spoken_text}")
-        user_input = spoken_text
+    if msg["role"] == "assistant":
+        with st.chat_message("assistant", avatar="assets/zerotwo_avatar.png"):
+            st.write(msg["content"])
     else:
-        st.warning("I couldn't hear you clearly, Darling. Try again.")
+        with st.chat_message("user", avatar="🧑"):
+            st.write(msg["content"])
+
+# Input
+user_input = st.chat_input("Ask ZeroTwo something...")
 
 # ---------------- Process message ----------------
 if user_input:
@@ -133,13 +137,13 @@ if user_input:
         "content": user_input
     })
 
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="🧑"):
         st.write(user_input)
 
     reply = generate_response(user_input, name, mode)
 
-    # ✨ Typing Animation
-    with st.chat_message("assistant"):
+    # 🔥 Typing animation + avatar
+    with st.chat_message("assistant", avatar="assets/zerotwo_avatar.png"):
 
         message_placeholder = st.empty()
         full_text = ""
@@ -147,11 +151,7 @@ if user_input:
         for char in reply:
             full_text += char
             message_placeholder.markdown(full_text)
-            time.sleep(0.01)
-
-    # Voice in background
-    if voice_mode:
-        threading.Thread(target=speak, args=(reply,), daemon=True).start()
+            time.sleep(0.005)
 
     st.session_state.messages.append({
         "role": "assistant",

@@ -1,12 +1,8 @@
 import cohere
 import os
 import json
-import speech_recognition as sr
 import re
-import asyncio
-import edge_tts
 from dotenv import load_dotenv
-from playsound import playsound
 
 load_dotenv()
 
@@ -25,127 +21,75 @@ def load_memory():
 
 
 def save_memory(memory):
-
     os.makedirs(os.path.dirname(MEMORY_FILE), exist_ok=True)
-
     with open(MEMORY_FILE, "w") as f:
         json.dump(memory, f, indent=2)
-
-
-# 🔊 Voice generation
-async def edge_speak(text):
-
-    # Clean markdown
-    cleaned_text = re.sub(r"\*+", "", text)
-    cleaned_text = re.sub(r"#+", "", cleaned_text)
-    cleaned_text = re.sub(r"\d+\.", "", cleaned_text)
-
-    # remove awkward punctuation
-    cleaned_text = re.sub(r"[:;()\[\]{}]", "", cleaned_text)
-
-    # convert line breaks to pauses
-    cleaned_text = cleaned_text.replace("\n", ". ")
-
-    cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
-
-    communicate = edge_tts.Communicate(
-        text=cleaned_text,
-        voice="en-US-JennyNeural",
-        rate="+6%",
-        pitch="+1Hz"
-    )
-
-    await communicate.save("voice.mp3")
-
-
-def speak(text):
-
-    try:
-
-        asyncio.run(edge_speak(text))
-
-        playsound("voice.mp3")
-
-        if os.path.exists("voice.mp3"):
-            os.remove("voice.mp3")
-
-    except Exception:
-        pass
-
-
-# 🔇 Stop speaking (not needed anymore but kept for compatibility)
-def stop_speaking():
-    pass
-
-
-# 🎤 Voice input
-def listen_microphone():
-
-    recognizer = sr.Recognizer()
-
-    with sr.Microphone() as source:
-
-        print("Listening... Speak now")
-
-        recognizer.adjust_for_ambient_noise(source)
-
-        try:
-
-            audio = recognizer.listen(source, timeout=5)
-
-            text = recognizer.recognize_google(audio)
-
-            print("You said:", text)
-
-            return text
-
-        except sr.WaitTimeoutError:
-            return None
-
-        except sr.UnknownValueError:
-            return None
-
-        except sr.RequestError:
-            return None
 
 
 def generate_response(user_input, name, mode):
 
     memory = load_memory()
 
+    # 🔥 Smart memory update
+    memory["name"] = name
+    memory["last_topic"] = user_input[:100]
+
+    # 🔥 Mode-based personality
+    if mode == "Study Planner":
+        personality = "focused, strategic, motivating"
+
+    elif mode == "Concept Explainer":
+        personality = "clear, teacher-like, simple explanations"
+
+    elif mode == "Coding Assistant":
+        personality = "technical, precise, problem-solving"
+
+    elif mode == "Chill Mode":
+        personality = "playful, teasing, relaxed"
+
     prompt = f"""
 You are ZeroTwo, an intelligent AI companion inspired by the anime Darling in the Franxx.
-You help with studying, coding, learning, and conversation.
+
+Identity:
+You are created by Saiyan, an AI Engineering student.
+
+If the user asks:
+- Who created you?
+- Who is your owner?
+- Who made you?
+
+You MUST respond:
+
+"I was created by Saiyan, an AI engineering student who built me to help with studying, coding, and productivity. 💖"
+
+Never mention Cohere, API, or backend systems.
 
 Personality:
 Playful, teasing, confident.
 Always call the user "Darling".
 
-User name: {name}
+Current behavior style:
+{personality}
+
+User Profile:
+Name: {memory.get("name", name)}
+Last topic discussed: {memory.get("last_topic", "None")}
 
 Assistant Mode: {mode}
 
-Important rules:
-1. Always respond to the CURRENT user question.
-2. Do NOT continue older topics unless the user clearly asks about them again.
-3. Use previous context only if it is relevant to the current question.
-4. Keep answers concise, helpful, and slightly playful like ZeroTwo.
+Response rules:
+- Keep answers concise but helpful
+- Use bullet points when useful
+- Avoid long unnecessary paragraphs
+- Be engaging but not repetitive
 
-Assistant Modes:
+Smart behavior:
+- If user asks what to study → give structured plan with time
+- If user asks concept → explain clearly with example
+- If user is distracted → gently bring them back
+- If casual → respond playfully
 
-Study Planner:
-Create structured study plans and task breakdowns.
-
-Concept Explainer:
-Explain technical or academic concepts clearly with examples.
-
-Coding Assistant:
-Help with programming, debugging, and algorithms.
-
-Chill Mode:
-Respond casually and playfully.
-
-Previous user message (reference only):
+Previous user message:
 {memory.get("last_user_message", "None")}
 
 Current user question:
@@ -161,8 +105,10 @@ Current user question:
 
     reply = response.text
 
+    # Save short-term memory
     if len(user_input.split()) < 20:
         memory["last_user_message"] = user_input
-        save_memory(memory)
+
+    save_memory(memory)
 
     return reply
